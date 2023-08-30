@@ -79,7 +79,23 @@ router.put("/:id", async function (req, res, next) {
     let { amt, paid } = req.body;
 
     let id = req.params.id;
+    let paid_date = null;
+    const invResult = await db.query(
+      `SELECT id, comp_code FROM invoices ORDER BY id`
+    );
 
+    if (invResult.rows.length === 0) {
+      throw new ExpressError(`invoices ${id} doesn't exists`, 404);
+    }
+
+    const paidDate = invResult.rows[0].paid_date;
+    if (!paidDate && paid) {
+      paid_date = new Date();
+    } else if (!paid) {
+      paid_date = null;
+    } else {
+      paid_date = paidDate;
+    }
     const result = await db.query(
       `UPDATE invoices SET amt = $1, paid =$2 ,paid_date=$3  where id = $4 RETURNING id, comp_code,amt, paid,add_date,paid_date`,
       [amt, paid, paid_date, id]
